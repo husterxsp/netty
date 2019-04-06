@@ -122,6 +122,10 @@ import java.nio.channels.Channels;
  * what fundamental differences they have, how they flow in a  pipeline,  and how to handle
  * the operation in your application.
  */
+// pipeline里面的每一个节点都是这样的一个数据结构
+// AttributeMap 添加属性
+// ChannelInboundInvoker 传播读事件
+// ChannelOutboundInvoker 传播写事件
 public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvoker, ChannelOutboundInvoker {
 
     /**

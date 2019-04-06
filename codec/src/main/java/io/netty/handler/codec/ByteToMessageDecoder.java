@@ -76,6 +76,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
         @Override
         public ByteBuf cumulate(ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf in) {
             ByteBuf buffer;
+            //
             if (cumulation.writerIndex() > cumulation.maxCapacity() - in.readableBytes()
                     || cumulation.refCnt() > 1) {
                 // Expand cumulation (by replace it) when either there is not more room in the buffer
@@ -85,6 +86,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 // See:
                 // - https://github.com/netty/netty/issues/2327
                 // - https://github.com/netty/netty/issues/1764
+                // 当前不够写，进行扩容
                 buffer = expandCumulation(alloc, cumulation, in.readableBytes());
             } else {
                 buffer = cumulation;
@@ -241,10 +243,13 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 ByteBuf data = (ByteBuf) msg;
                 first = cumulation == null;
                 if (first) {
+                    // 第一次读到数据
                     cumulation = data;
                 } else {
+                    // 累加器累加
                     cumulation = cumulator.cumulate(ctx.alloc(), cumulation, data);
                 }
+                // 开始解析
                 callDecode(ctx, cumulation, out);
             } catch (DecoderException e) {
                 throw e;
@@ -264,6 +269,8 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
 
                 int size = out.size();
                 decodeWasNull = !out.insertSinceRecycled();
+
+                // 向下传播
                 fireChannelRead(ctx, out, size);
                 out.recycle();
             }
@@ -419,13 +426,17 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 }
 
                 if (outSize == out.size()) {
+                    // 没有写
                     if (oldInputLength == in.readableBytes()) {
+                        // 没有读
                         break;
                     } else {
+                        // 读了一部分，还不够解析，继续读
                         continue;
                     }
                 }
 
+                // 写了，但是没有读。。报错
                 if (oldInputLength == in.readableBytes()) {
                     throw new DecoderException(
                             StringUtil.simpleClassName(getClass()) +

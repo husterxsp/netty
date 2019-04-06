@@ -84,6 +84,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
      */
     private boolean registered;
 
+    // 这里像是链表？
     protected DefaultChannelPipeline(Channel channel) {
         this.channel = ObjectUtil.checkNotNull(channel, "channel");
         succeededFuture = new SucceededChannelFuture(channel, null);
@@ -192,6 +193,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return addLast(null, name, handler);
     }
 
+    //
     @Override
     public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
@@ -212,17 +214,21 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             }
 
             EventExecutor executor = newCtx.executor();
+
+            // 不在当前线程，则放到任务队列
             if (!executor.inEventLoop()) {
                 newCtx.setAddPending();
                 executor.execute(new Runnable() {
                     @Override
                     public void run() {
+                        //
                         callHandlerAdded0(newCtx);
                     }
                 });
                 return this;
             }
         }
+        // 触发添加完成回调
         callHandlerAdded0(newCtx);
         return this;
     }
@@ -374,11 +380,13 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return this;
     }
 
+    //
     @Override
     public final ChannelPipeline addLast(ChannelHandler... handlers) {
         return addLast(null, handlers);
     }
 
+    //
     @Override
     public final ChannelPipeline addLast(EventExecutorGroup executor, ChannelHandler... handlers) {
         if (handlers == null) {
@@ -469,6 +477,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return ctx;
     }
 
+    // 标准的双向链表的删除
     private static void remove0(AbstractChannelHandlerContext ctx) {
         AbstractChannelHandlerContext prev = ctx.prev;
         AbstractChannelHandlerContext next = ctx.next;
@@ -583,7 +592,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private static void checkMultiplicity(ChannelHandler handler) {
         if (handler instanceof ChannelHandlerAdapter) {
             ChannelHandlerAdapter h = (ChannelHandlerAdapter) handler;
+
             if (!h.isSharable() && h.added) {
+                // 非共享 但是已添加，抛出异常
                 throw new ChannelPipelineException(
                         h.getClass().getName() +
                         " is not a @Sharable handler, so can't be added or removed multiple times.");
@@ -594,7 +605,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     private void callHandlerAdded0(final AbstractChannelHandlerContext ctx) {
         try {
+
             ctx.handler().handlerAdded(ctx);
+            // 节点添加完毕
             ctx.setAddComplete();
         } catch (Throwable t) {
             boolean removed = false;
@@ -628,8 +641,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         // Notify the complete removal.
         try {
             try {
+                // 回调执行完
                 ctx.handler().handlerRemoved(ctx);
             } finally {
+                // 状态设置为remove
                 ctx.setRemoved();
             }
         } catch (Throwable t) {
@@ -720,6 +735,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             throw new NullPointerException("handler");
         }
 
+        // 从头开始遍历，找到对应节点
         AbstractChannelHandlerContext ctx = head.next;
         for (;;) {
 
@@ -1083,6 +1099,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     }
 
+    // 找不到就抛出异常
     private AbstractChannelHandlerContext getContextOrDie(ChannelHandler handler) {
         AbstractChannelHandlerContext ctx = (AbstractChannelHandlerContext) context(handler);
         if (ctx == null) {
@@ -1174,7 +1191,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     final class TailContext extends AbstractChannelHandlerContext implements ChannelInboundHandler {
 
         TailContext(DefaultChannelPipeline pipeline) {
+            //
             super(pipeline, null, TAIL_NAME, true, false);
+            //
             setAddComplete();
         }
 
@@ -1283,6 +1302,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void read(ChannelHandlerContext ctx) {
+
             unsafe.beginRead();
         }
 
@@ -1321,6 +1341,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             ctx.fireChannelActive();
 
+            //
             readIfIsAutoRead();
         }
 

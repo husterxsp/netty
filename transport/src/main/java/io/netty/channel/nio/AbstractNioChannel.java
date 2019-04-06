@@ -85,6 +85,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         this.ch = ch;
         this.readInterestOp = readInterestOp;
         try {
+            // 设置是否阻塞
             ch.configureBlocking(false);
         } catch (IOException e) {
             try {
@@ -384,6 +385,10 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         boolean selected = false;
         for (;;) {
             try {
+                // 调用JDK底层的register 来注册。
+                // 第二个参数0 表示不关心任何事件
+                // 把this传入，这样selector轮询到java channel的读写的时候，可以直接把this拿出来，
+                // this 指服务端的channel
                 selectionKey = javaChannel().register(eventLoop().selector, 0, this);
                 return;
             } catch (CancelledKeyException e) {
@@ -418,6 +423,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
         final int interestOps = selectionKey.interestOps();
         if ((interestOps & readInterestOp) == 0) {
+            // 增加事件
             selectionKey.interestOps(interestOps | readInterestOp);
         }
     }

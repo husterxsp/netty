@@ -75,6 +75,7 @@ public class DefaultThreadFactory implements ThreadFactory {
             case 1:
                 return poolName.toLowerCase(Locale.US);
             default:
+                // 第一个字符大写转为小写
                 if (Character.isUpperCase(poolName.charAt(0)) && Character.isLowerCase(poolName.charAt(1))) {
                     return Character.toLowerCase(poolName.charAt(0)) + poolName.substring(1);
                 } else {
@@ -127,6 +128,7 @@ public class DefaultThreadFactory implements ThreadFactory {
     }
 
     protected Thread newThread(Runnable r, String name) {
+        // netty用的自己封装的线程实现，封装了 ThreadLocal
         return new FastThreadLocalThread(threadGroup, r, name);
     }
 

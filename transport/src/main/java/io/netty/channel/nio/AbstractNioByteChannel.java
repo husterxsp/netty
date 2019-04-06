@@ -169,6 +169,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             if (msg instanceof ByteBuf) {
                 ByteBuf buf = (ByteBuf) msg;
                 int readableBytes = buf.readableBytes();
+                // 没有可读
                 if (readableBytes == 0) {
                     in.remove();
                     continue;
@@ -176,11 +177,15 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
                 boolean done = false;
                 long flushedAmount = 0;
+
+                // 写自旋
                 if (writeSpinCount == -1) {
                     writeSpinCount = config().getWriteSpinCount();
                 }
                 for (int i = writeSpinCount - 1; i >= 0; i --) {
+
                     int localFlushedAmount = doWriteBytes(buf);
+
                     if (localFlushedAmount == 0) {
                         setOpWrite = true;
                         break;
@@ -244,6 +249,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
     @Override
     protected final Object filterOutboundMessage(Object msg) {
+        // 非堆外内存到堆外内存的转化
         if (msg instanceof ByteBuf) {
             ByteBuf buf = (ByteBuf) msg;
             if (buf.isDirect()) {

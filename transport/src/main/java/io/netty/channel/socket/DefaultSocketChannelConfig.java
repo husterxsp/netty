@@ -50,6 +50,7 @@ public class DefaultSocketChannelConfig extends DefaultChannelConfig
         this.javaSocket = javaSocket;
 
         // Enable TCP_NODELAY by default if possible.
+        // 默认是true
         if (PlatformDependent.canEnableTcpNoDelayByDefault()) {
             try {
                 setTcpNoDelay(true);
@@ -252,6 +253,8 @@ public class DefaultSocketChannelConfig extends DefaultChannelConfig
     @Override
     public SocketChannelConfig setTcpNoDelay(boolean tcpNoDelay) {
         try {
+            // TCP_NODELAY
+            // 避免延迟，小数据包也及时发送
             javaSocket.setTcpNoDelay(tcpNoDelay);
         } catch (SocketException e) {
             throw new ChannelException(e);

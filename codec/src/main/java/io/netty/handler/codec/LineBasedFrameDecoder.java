@@ -27,12 +27,14 @@ import java.util.List;
  * Both {@code "\n"} and {@code "\r\n"} are handled.
  * For a more general delimiter-based decoder, see {@link DelimiterBasedFrameDecoder}.
  */
+// 行解码器
 public class LineBasedFrameDecoder extends ByteToMessageDecoder {
 
     /** Maximum length of a frame we're willing to decode.  */
     private final int maxLength;
     /** Whether or not to throw an exception as soon as we exceed maxLength. */
     private final boolean failFast;
+    // 解析的数据包结果是否带换行符
     private final boolean stripDelimiter;
 
     /** True if we're discarding input because we're already over maxLength.  */
@@ -95,12 +97,14 @@ public class LineBasedFrameDecoder extends ByteToMessageDecoder {
                 final int delimLength = buffer.getByte(eol) == '\r'? 2 : 1;
 
                 if (length > maxLength) {
+                    // 当前长度过长，丢弃。
                     buffer.readerIndex(eol + delimLength);
                     fail(ctx, length);
                     return null;
                 }
 
                 if (stripDelimiter) {
+                    // 分隔符也算到数据包里
                     frame = buffer.readRetainedSlice(length);
                     buffer.skipBytes(delimLength);
                 } else {
@@ -109,10 +113,14 @@ public class LineBasedFrameDecoder extends ByteToMessageDecoder {
 
                 return frame;
             } else {
+                // 没找到换行符
                 final int length = buffer.readableBytes();
+                // 长度超了
                 if (length > maxLength) {
                     discardedBytes = length;
+                    // 移动读指针
                     buffer.readerIndex(buffer.writerIndex());
+                    // 丢弃模式
                     discarding = true;
                     if (failFast) {
                         fail(ctx, "over " + discardedBytes);
@@ -122,6 +130,7 @@ public class LineBasedFrameDecoder extends ByteToMessageDecoder {
             }
         } else {
             if (eol >= 0) {
+                // 找到换行符了，但是已经处于丢弃模式，把换行符前面的一部分数据也丢了
                 final int length = discardedBytes + eol - buffer.readerIndex();
                 final int delimLength = buffer.getByte(eol) == '\r'? 2 : 1;
                 buffer.readerIndex(eol + delimLength);

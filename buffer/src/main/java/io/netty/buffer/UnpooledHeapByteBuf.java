@@ -33,6 +33,8 @@ import java.nio.channels.ScatteringByteChannel;
 public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     private final ByteBufAllocator alloc;
+
+    // 数组
     byte[] array;
     private ByteBuffer tmpNioBuf;
 
@@ -43,6 +45,7 @@ public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
      * @param maxCapacity the max capacity of the underlying byte array
      */
     protected UnpooledHeapByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
+        // 直接new 数组
         this(alloc, new byte[initialCapacity], 0, 0, maxCapacity);
     }
 
@@ -78,6 +81,7 @@ public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
     }
 
     private void setArray(byte[] initialArray) {
+        // 保存创建的数组
         array = initialArray;
         tmpNioBuf = null;
     }

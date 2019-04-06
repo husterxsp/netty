@@ -175,7 +175,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         super(parent);
         this.addTaskWakesUp = addTaskWakesUp;
         this.maxPendingTasks = Math.max(16, maxPendingTasks);
+
         this.executor = ObjectUtil.checkNotNull(executor, "executor");
+
+        // 任务队列
         taskQueue = newTaskQueue(this.maxPendingTasks);
         rejectedExecutionHandler = ObjectUtil.checkNotNull(rejectedHandler, "rejectedHandler");
     }
@@ -284,15 +287,20 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    // 从定时任务队列拉取任务
+    // 定时任务队列是优先队列
+    //
     private boolean fetchFromScheduledTaskQueue() {
         long nanoTime = AbstractScheduledEventExecutor.nanoTime();
         Runnable scheduledTask  = pollScheduledTask(nanoTime);
         while (scheduledTask != null) {
             if (!taskQueue.offer(scheduledTask)) {
+                // 普通任务队列放不下，放回原来的定时任务队列。
                 // No space left in the task queue add it back to the scheduledTaskQueue so we pick it up again.
                 scheduledTaskQueue().add((ScheduledFutureTask<?>) scheduledTask);
                 return false;
             }
+            // 继续拉取
             scheduledTask  = pollScheduledTask(nanoTime);
         }
         return true;
@@ -405,8 +413,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      */
     protected boolean runAllTasks(long timeoutNanos) {
         fetchFromScheduledTaskQueue();
+
+        // 拉取一个任务
         Runnable task = pollTask();
+
         if (task == null) {
+            // 每次执行完所有的任务之后的收尾
             afterRunningAllTasks();
             return false;
         }
@@ -421,6 +433,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
             // Check timeout every 64 tasks because nanoTime() is relatively expensive.
             // XXX: Hard-coded value - will make it configurable if it is really a problem.
+            // nanoTime相对来说也是比较耗时的。
+            //
             if ((runTasks & 0x3F) == 0) {
                 lastExecutionTime = ScheduledFutureTask.nanoTime();
                 if (lastExecutionTime >= deadline) {
@@ -757,7 +771,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (inEventLoop) {
             addTask(task);
         } else {
+            // false
+            // 启动线程
             startThread();
+
             addTask(task);
             if (isShutdown() && removeTask(task)) {
                 reject();
@@ -851,6 +868,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private void startThread() {
         if (STATE_UPDATER.get(this) == ST_NOT_STARTED) {
+            // 判断未启动则启动
             if (STATE_UPDATER.compareAndSet(this, ST_NOT_STARTED, ST_STARTED)) {
                 doStartThread();
             }
@@ -862,6 +880,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         executor.execute(new Runnable() {
             @Override
             public void run() {
+                // 保存当前线程，
+                // 即一个NioeveentLoop和一个线程绑定
                 thread = Thread.currentThread();
                 if (interrupted) {
                     thread.interrupt();
@@ -870,7 +890,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
+                    //
+                    // nioEventLoop启动
                     SingleThreadEventExecutor.this.run();
+
                     success = true;
                 } catch (Throwable t) {
                     logger.warn("Unexpected exception from an event executor: ", t);

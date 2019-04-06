@@ -163,10 +163,12 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         checkNotNull(listener, "listener");
 
         synchronized (this) {
+            //
             addListener0(listener);
         }
 
         if (isDone()) {
+            // 通知观察者
             notifyListeners();
         }
 
@@ -519,10 +521,13 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     private void addListener0(GenericFutureListener<? extends Future<? super V>> listener) {
         if (listeners == null) {
+            // 1
             listeners = listener;
         } else if (listeners instanceof DefaultFutureListeners) {
+            // 3
             ((DefaultFutureListeners) listeners).add(listener);
         } else {
+            // 2
             listeners = new DefaultFutureListeners((GenericFutureListener<? extends Future<V>>) listeners, listener);
         }
     }

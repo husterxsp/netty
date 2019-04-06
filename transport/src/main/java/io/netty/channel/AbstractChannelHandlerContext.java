@@ -817,11 +817,15 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     }
 
     private void write(Object msg, boolean flush, ChannelPromise promise) {
+        //
         AbstractChannelHandlerContext next = findContextOutbound();
+
         final Object m = pipeline.touch(msg, next);
         EventExecutor executor = next.executor();
+        // 是否是reactor线程
         if (executor.inEventLoop()) {
             if (flush) {
+
                 next.invokeWriteAndFlush(m, promise);
             } else {
                 next.invokeWrite(m, promise);
@@ -839,6 +843,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
 
     @Override
     public ChannelFuture writeAndFlush(Object msg) {
+        // newPromise 创建一个被观察者
         return writeAndFlush(msg, newPromise());
     }
 
@@ -953,6 +958,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     private AbstractChannelHandlerContext findContextOutbound() {
         AbstractChannelHandlerContext ctx = this;
         do {
+            // 找prev节点
             ctx = ctx.prev;
         } while (!ctx.outbound);
         return ctx;
@@ -968,6 +974,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     }
 
     final void setAddComplete() {
+        // CAS 自旋设置
         for (;;) {
             int oldState = handlerState;
             // Ensure we never update when the handlerState is REMOVE_COMPLETE already.

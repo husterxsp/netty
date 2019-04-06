@@ -89,11 +89,13 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         assert inEventLoop();
 
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
+        // 拿到第一个任务
         ScheduledFutureTask<?> scheduledTask = scheduledTaskQueue == null ? null : scheduledTaskQueue.peek();
         if (scheduledTask == null) {
             return null;
         }
 
+        // 任务的截止时间已到，拿出来执行
         if (scheduledTask.deadlineNanos() <= nanoTime) {
             scheduledTaskQueue.remove();
             return scheduledTask;
@@ -150,6 +152,8 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
             throw new IllegalArgumentException(
                     String.format("delay: %d (expected: >= 0)", delay));
         }
+
+        // 任务封装成ScheduledFutureTask
         return schedule(new ScheduledFutureTask<V>(
                 this, callable, ScheduledFutureTask.deadlineNanos(unit.toNanos(delay))));
     }
@@ -194,6 +198,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         if (inEventLoop()) {
             scheduledTaskQueue().add(task);
         } else {
+            // 把添加定时任务的操作也当做普通task ，来保证线程安全
             execute(new Runnable() {
                 @Override
                 public void run() {

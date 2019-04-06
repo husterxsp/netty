@@ -74,6 +74,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator {
         // in NIO and EPOLL as well. If we choose a smaller number we will run into hotspots as allocation and
         // deallocation needs to be synchronized on the PoolArena.
         // See https://github.com/netty/netty/issues/3888
+
+        // 两倍CPU核数
+        // 线程数也是，也就是每个线程可以独享一个Arena，可以不用加锁
         final int defaultMinNumArena = runtime.availableProcessors() * 2;
         final int defaultChunkSize = DEFAULT_PAGE_SIZE << DEFAULT_MAX_ORDER;
         DEFAULT_NUM_HEAP_ARENA = Math.max(0,
@@ -173,6 +176,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator {
         int pageShifts = validateAndCalculatePageShifts(pageSize);
 
         if (nHeapArena > 0) {
+            // 初始化
             heapArenas = newArenaArray(nHeapArena);
             List<PoolArenaMetric> metrics = new ArrayList<PoolArenaMetric>(heapArenas.length);
             for (int i = 0; i < heapArenas.length; i ++) {
@@ -204,6 +208,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator {
 
     @SuppressWarnings("unchecked")
     private static <T> PoolArena<T>[] newArenaArray(int size) {
+        // 一个数组
         return new PoolArena[size];
     }
 
@@ -254,12 +259,19 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator {
 
     @Override
     protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
+
+        // 拿到线程局部缓存 PoolThreadCache
         PoolThreadCache cache = threadCache.get();
+
+        // 在线程局部缓存的Arena上进行内存分配
+        // PoolThreadCache维护着堆和堆外两块内存
         PoolArena<ByteBuffer> directArena = cache.directArena;
 
         ByteBuf buf;
         if (directArena != null) {
+
             buf = directArena.allocate(cache, initialCapacity, maxCapacity);
+
         } else {
             if (PlatformDependent.hasUnsafe()) {
                 buf = UnsafeByteBufUtil.newUnsafeDirectByteBuf(this, initialCapacity, maxCapacity);
@@ -342,11 +354,14 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator {
         threadCache.remove();
     }
 
+    //
     final class PoolThreadLocalCache extends FastThreadLocal<PoolThreadCache> {
 
         @Override
         protected synchronized PoolThreadCache initialValue() {
+            //
             final PoolArena<byte[]> heapArena = leastUsedArena(heapArenas);
+            //
             final PoolArena<ByteBuffer> directArena = leastUsedArena(directArenas);
 
             return new PoolThreadCache(

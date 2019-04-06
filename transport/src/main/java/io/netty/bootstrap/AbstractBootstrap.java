@@ -53,6 +53,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     private volatile SocketAddress localAddress;
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
     private final Map<AttributeKey<?>, Object> attrs = new LinkedHashMap<AttributeKey<?>, Object>();
+
+    // 服务端启动过程中做些什么事情
     private volatile ChannelHandler handler;
 
     AbstractBootstrap() {
@@ -97,6 +99,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         if (channelClass == null) {
             throw new NullPointerException("channelClass");
         }
+        // 通过反射的方式创建
         return channelFactory(new ReflectiveChannelFactory<C>(channelClass));
     }
 
@@ -236,6 +239,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     /**
      * Create a new {@link Channel} and bind it.
      */
+    // 端口绑定。用户代码入口
     public ChannelFuture bind() {
         validate();
         SocketAddress localAddress = this.localAddress;
@@ -278,6 +282,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     private ChannelFuture doBind(final SocketAddress localAddress) {
+
+        // initAndRegister 初始化并注册
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
@@ -313,9 +319,12 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
     }
 
+    //
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
+            // 新建channel
+            // ReflectiveChannelFactory
             channel = channelFactory.newChannel();
             init(channel);
         } catch (Throwable t) {
@@ -356,6 +365,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
 
         // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up
         // the pipeline in its channelRegistered() implementation.
+
+        // 创建task来绑定端口
         channel.eventLoop().execute(new Runnable() {
             @Override
             public void run() {

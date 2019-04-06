@@ -134,6 +134,10 @@ import java.nio.charset.UnsupportedCharsetException;
  *      |                   |                  |                  |
  *      0      <=      readerIndex   <=   writerIndex    <=    capacity
  *
+ * 主要有三种API：read、write、set
+ * mark
+ * reset
+ *
  *
  *  AFTER discardReadBytes()
  *
@@ -245,6 +249,7 @@ import java.nio.charset.UnsupportedCharsetException;
  * Please refer to {@link ByteBufInputStream} and
  * {@link ByteBufOutputStream}.
  */
+
 @SuppressWarnings("ClassMayBeInterface")
 public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
 
@@ -259,6 +264,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      * than the current capacity, the buffer is appended with unspecified data whose length is
      * {@code (newCapacity - currentCapacity)}.
      */
+
     public abstract ByteBuf capacity(int newCapacity);
 
     /**
@@ -267,6 +273,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      * {@link #ensureWritable(int)}, those methods will raise an
      * {@link IllegalArgumentException}.
      */
+    // 最大
     public abstract int maxCapacity();
 
     /**
@@ -464,6 +471,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      * {@code readerIndex} by calling {@link #resetReaderIndex()}.
      * The initial value of the marked {@code readerIndex} is {@code 0}.
      */
+    // 保存read index
     public abstract ByteBuf markReaderIndex();
 
     /**
@@ -474,6 +482,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      *         if the current {@code writerIndex} is less than the marked
      *         {@code readerIndex}
      */
+    // 恢复read index
     public abstract ByteBuf resetReaderIndex();
 
     /**
@@ -960,6 +969,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 1} is greater than {@code this.capacity}
      */
+
     public abstract ByteBuf setByte(int index, int value);
 
     /**

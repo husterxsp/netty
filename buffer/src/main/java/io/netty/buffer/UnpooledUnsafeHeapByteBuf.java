@@ -26,6 +26,8 @@ final class UnpooledUnsafeHeapByteBuf extends UnpooledHeapByteBuf {
      * @param maxCapacity the max capacity of the underlying byte array
      */
     UnpooledUnsafeHeapByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
+        // 即构造函数与UnpooledHeapByteBuf一样
+        // 主要是 _getByte 的不同
         super(alloc, initialCapacity, maxCapacity);
     }
 

@@ -232,6 +232,7 @@ public class DelimiterBasedFrameDecoder extends ByteToMessageDecoder {
             return lineBasedDecoder.decode(ctx, buffer);
         }
         // Try all delimiters and choose the delimiter which yields the shortest frame.
+        // 找到最小分隔符。一开始传入的分隔符可以是多个。
         int minFrameLength = Integer.MAX_VALUE;
         ByteBuf minDelim = null;
         for (ByteBuf delim: delimiters) {
@@ -247,6 +248,7 @@ public class DelimiterBasedFrameDecoder extends ByteToMessageDecoder {
             ByteBuf frame;
 
             if (discardingTooLongFrame) {
+                // 处于丢弃模式
                 // We've just finished discarding a very large frame.
                 // Go back to the initial state.
                 discardingTooLongFrame = false;
@@ -261,12 +263,14 @@ public class DelimiterBasedFrameDecoder extends ByteToMessageDecoder {
             }
 
             if (minFrameLength > maxFrameLength) {
+                // 太大，丢弃
                 // Discard read frame.
                 buffer.skipBytes(minFrameLength + minDelimLength);
                 fail(minFrameLength);
                 return null;
             }
 
+            // 读取数据包
             if (stripDelimiter) {
                 frame = buffer.readRetainedSlice(minFrameLength);
                 buffer.skipBytes(minDelimLength);

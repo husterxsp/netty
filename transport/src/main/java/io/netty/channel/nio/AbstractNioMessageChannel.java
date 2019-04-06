@@ -61,17 +61,24 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
         @Override
         public void read() {
+            // 确保是eventLoop线程？？？和外部线程是什么区别？
             assert eventLoop().inEventLoop();
+
             final ChannelConfig config = config();
             final ChannelPipeline pipeline = pipeline();
+
+            // 处理服务端处理速率
             final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
+
             allocHandle.reset(config);
 
             boolean closed = false;
             Throwable exception = null;
             try {
                 try {
+
                     do {
+                        // readBuf 是一个数组，承载读出来的对象。
                         int localRead = doReadMessages(readBuf);
                         if (localRead == 0) {
                             break;
@@ -83,15 +90,19 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
                         allocHandle.incMessagesRead(localRead);
                     } while (allocHandle.continueReading());
+
                 } catch (Throwable t) {
                     exception = t;
                 }
 
                 int size = readBuf.size();
+
+                // 遍历每一条连接
                 for (int i = 0; i < size; i ++) {
                     readPending = false;
                     pipeline.fireChannelRead(readBuf.get(i));
                 }
+
                 readBuf.clear();
                 allocHandle.readComplete();
                 pipeline.fireChannelReadComplete();

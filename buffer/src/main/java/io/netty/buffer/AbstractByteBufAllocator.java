@@ -162,11 +162,13 @@ public abstract class AbstractByteBufAllocator implements ByteBufAllocator {
 
     @Override
     public ByteBuf directBuffer() {
+        //
         return directBuffer(DEFAULT_INITIAL_CAPACITY, Integer.MAX_VALUE);
     }
 
     @Override
     public ByteBuf directBuffer(int initialCapacity) {
+
         return directBuffer(initialCapacity, Integer.MAX_VALUE);
     }
 

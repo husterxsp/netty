@@ -168,6 +168,7 @@ public abstract class TypeParameterMatcher {
 
         @Override
         public boolean match(Object msg) {
+            // 直接判断是否是实例
             return type.isInstance(msg);
         }
     }

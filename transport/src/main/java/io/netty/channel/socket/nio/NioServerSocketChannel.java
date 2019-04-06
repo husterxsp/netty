@@ -47,6 +47,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NioServerSocketChannel.class);
 
+    // 创建idk底层channel
     private static ServerSocketChannel newSocket(SelectorProvider provider) {
         try {
             /**
@@ -83,6 +84,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
      */
     public NioServerSocketChannel(ServerSocketChannel channel) {
         super(null, channel, SelectionKey.OP_ACCEPT);
+        // config 配置tcp参数
         config = new NioServerSocketChannelConfig(this, javaChannel().socket());
     }
 
@@ -113,6 +115,10 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     @Override
     protected ServerSocketChannel javaChannel() {
+        // 一个javaChannel 对应一个ServerSocketChannel
+        // ServerSocketChannel 又对应底层NIO socketchannel
+        // ServerSocketChannel 是jdk的
+        // 如果是bio模型的就是对应到serversocket了
         return (ServerSocketChannel) super.javaChannel();
     }
 
@@ -137,10 +143,19 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     @Override
     protected int doReadMessages(List<Object> buf) throws Exception {
+
+        // 这里拿到socket
         SocketChannel ch = javaChannel().accept();
 
         try {
             if (ch != null) {
+                // ch是java底层的channel,可以理解为一个socket
+                // 封装成netty里的channel
+                // 这里最上层继承自 Channel 接口
+
+                // 这里 this是服务端channel
+                // ch是客户端channel
+                // NioSocketChannel是封装后的channel
                 buf.add(new NioSocketChannel(this, ch));
                 return 1;
             }

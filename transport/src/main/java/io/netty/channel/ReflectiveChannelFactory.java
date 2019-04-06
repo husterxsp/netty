@@ -32,6 +32,7 @@ public class ReflectiveChannelFactory<T extends Channel> implements ChannelFacto
         this.clazz = clazz;
     }
 
+    // 通过反射创建channel
     @Override
     public T newChannel() {
         try {

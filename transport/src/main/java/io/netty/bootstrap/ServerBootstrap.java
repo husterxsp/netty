@@ -44,10 +44,14 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ServerBootstrap.class);
 
+    // 设置每次连接的tcp的一些属性
     private final Map<ChannelOption<?>, Object> childOptions = new LinkedHashMap<ChannelOption<?>, Object>();
+    // 给客户端连接绑定一些属性
     private final Map<AttributeKey<?>, Object> childAttrs = new LinkedHashMap<AttributeKey<?>, Object>();
     private final ServerBootstrapConfig config = new ServerBootstrapConfig(this);
     private volatile EventLoopGroup childGroup;
+
+    // 给channel定义一些列handler
     private volatile ChannelHandler childHandler;
 
     public ServerBootstrap() { }
@@ -137,6 +141,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         return this;
     }
 
+    // 初始化服务端channel
     @Override
     void init(Channel channel) throws Exception {
         final Map<ChannelOption<?>, Object> options = options0();
@@ -175,6 +180,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                     pipeline.addLast(handler);
                 }
 
+                // 特殊的处理器 ServerBootstrapAcceptor
                 // We add this handler via the EventLoop as the user may have used a ChannelInitializer as handler.
                 // In this case the initChannel(...) method will only be called after this method returns. Because
                 // of this we need to ensure we add our handler in a delayed fashion so all the users handler are

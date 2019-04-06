@@ -61,7 +61,7 @@ public final class ChannelOutboundBuffer {
     private final Channel channel;
 
     // Entry(flushedEntry) --> ... Entry(unflushedEntry) --> ... Entry(tailEntry)
-    //
+    // flushed 可以写socket
     // The Entry that is the first in the linked-list structure that was flushed
     private Entry flushedEntry;
     // The Entry which is the first unflushed in the linked-list structure
@@ -113,7 +113,10 @@ public final class ChannelOutboundBuffer {
      * the message was written.
      */
     public void addMessage(Object msg, int size, ChannelPromise promise) {
+
+        // 封装成entry
         Entry entry = Entry.newInstance(msg, size, total(msg), promise);
+
         if (tailEntry == null) {
             flushedEntry = null;
             tailEntry = entry;
@@ -128,6 +131,7 @@ public final class ChannelOutboundBuffer {
 
         // increment pending bytes after adding message to the unflushed arrays.
         // See https://github.com/netty/netty/issues/1619
+        // 统计有多少数据需要写出。
         incrementPendingOutboundBytes(size, false);
     }
 

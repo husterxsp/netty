@@ -44,6 +44,7 @@ public interface ByteBufAllocator {
 
     /**
      * Allocate a {@link ByteBuf}, preferably a direct buffer which is suitable for I/O.
+     *
      */
     ByteBuf ioBuffer();
 

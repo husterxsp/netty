@@ -64,6 +64,7 @@ public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
         }
 
         this.alloc = alloc;
+        // 调用jdk API 分配直接内存
         setByteBuffer(ByteBuffer.allocateDirect(initialCapacity));
     }
 

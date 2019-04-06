@@ -32,9 +32,14 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
     @SuppressWarnings("unchecked")
     @Override
     public EventExecutorChooser newChooser(EventExecutor[] executors) {
+        // 判断是否是2的幂次，2，4，6
         if (isPowerOfTwo(executors.length)) {
+            // 这里是做了优化的
+            // index++ & (length - 1)
             return new PowerOfTowEventExecutorChooser(executors);
         } else {
+            // 不是2的幂次，返回普通的索引下标
+            // index++ % length
             return new GenericEventExecutorChooser(executors);
         }
     }
@@ -53,6 +58,7 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 
         @Override
         public EventExecutor next() {
+            //
             return executors[idx.getAndIncrement() & executors.length - 1];
         }
     }
@@ -67,6 +73,7 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 
         @Override
         public EventExecutor next() {
+            //
             return executors[Math.abs(idx.getAndIncrement() % executors.length)];
         }
     }

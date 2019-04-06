@@ -108,6 +108,7 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
                 ctx.fireChannelRead(msg);
             }
         } finally {
+            // 释放
             if (autoRelease && release) {
                 ReferenceCountUtil.release(msg);
             }
