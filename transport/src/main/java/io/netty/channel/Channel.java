@@ -26,7 +26,7 @@ import io.netty.util.AttributeMap;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-
+// 底层socket的抽象，可以进行一些读，写，连接，绑定的操作
 /**
  * A nexus to a network socket or a component which is capable of I/O
  * operations such as read, write, connect, and bind.

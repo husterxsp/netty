@@ -142,6 +142,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     static void invokeChannelRegistered(final AbstractChannelHandlerContext next) {
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
+            // 这里一直往下，会触发 initChannel 回调
             next.invokeChannelRegistered();
         } else {
             executor.execute(new Runnable() {
@@ -493,6 +494,8 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
 
         final AbstractChannelHandlerContext next = findContextOutbound();
         EventExecutor executor = next.executor();
+
+        // 为什么是通过outBound来bing地址呢？
         if (executor.inEventLoop()) {
             next.invokeBind(localAddress, promise);
         } else {
@@ -961,6 +964,8 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
             // 找prev节点
             ctx = ctx.prev;
         } while (!ctx.outbound);
+        // 找prev 节点，其outbound 是true
+        // 所以一开始找到了 用户代码里的 LoggingHandler
         return ctx;
     }
 

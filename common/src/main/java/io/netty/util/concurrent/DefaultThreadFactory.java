@@ -93,6 +93,9 @@ public class DefaultThreadFactory implements ThreadFactory {
                     "priority: " + priority + " (expected: Thread.MIN_PRIORITY <= priority <= Thread.MAX_PRIORITY)");
         }
 
+        // NioEventLoop 的线程池名字为什么从2开始？
+        // 这里断点看着一开始有一个poolId=1的时候是 "globalEventExecutor-1-"
+        // 可以看GlobalEventExecutor的注释，它会自动启动线程，在1s内如果任务队列没有任务的话，线程就会终止。
         prefix = poolName + '-' + poolId.incrementAndGet() + '-';
         this.daemon = daemon;
         this.priority = priority;

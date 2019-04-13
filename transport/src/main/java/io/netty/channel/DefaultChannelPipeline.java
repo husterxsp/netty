@@ -200,6 +200,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         synchronized (this) {
             checkMultiplicity(handler);
 
+            // 这里添加handler的时候先构造一个Context对象。然后再添加到链表里。
             newCtx = newContext(group, filterName(name, handler), handler);
 
             addLast0(newCtx);
@@ -993,6 +994,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     @Override
     public final ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise) {
+        // 为什么都是tail呢？
         return tail.bind(localAddress, promise);
     }
 
@@ -1321,10 +1323,18 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             ctx.fireExceptionCaught(cause);
         }
 
+        // channel 注册之后 ，会传播channelRegistered事件
         @Override
         public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+
+            // 这里先看一下是否有handler需要添加
             invokeHandlerAddedIfNeeded();
+
+            // 触发channel已注册的事件。
+            // 这里是HeadContext，那么接下来会一直沿着链表往下传播，
+            // 传到每一个context节点，都会去调用对应的handler的channelInit
             ctx.fireChannelRegistered();
+
         }
 
         @Override
@@ -1403,7 +1413,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         void execute() {
+            // 好多地方都有excute啊。。。
             EventExecutor executor = ctx.executor();
+            // executor() 拿到 eventLoop
+
             if (executor.inEventLoop()) {
                 callHandlerAdded0(ctx);
             } else {

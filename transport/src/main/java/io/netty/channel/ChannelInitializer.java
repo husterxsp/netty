@@ -117,6 +117,9 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
                 // We do so to prevent multiple calls to initChannel(...).
                 exceptionCaught(ctx, cause);
             } finally {
+
+                // 注意这里，也就是说，通过 ChannelInitializer 添加的pipeline节点，
+                // 在执行网 initChannel 方法后就完成了使命，然后就删掉了
                 remove(ctx);
             }
             return true;

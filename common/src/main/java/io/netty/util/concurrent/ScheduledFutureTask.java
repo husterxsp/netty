@@ -37,6 +37,10 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
 
     private final long id = nextTaskId.getAndIncrement();
     private long deadlineNanos;
+
+    // 1.若干时间后执行一次
+    // 2.每隔一段时间执行一次
+    // 3.每次执行结束，隔一定时间再执行一次
     /* 0 - no repeat, >0 - repeat at fixed rate, <0 - repeat with fixed delay */
     private final long periodNanos;
 
@@ -119,6 +123,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         assert executor().inEventLoop();
         try {
             if (periodNanos == 0) {
+                // 1.若干时间后执行一次
                 if (setUncancellableInternal()) {
                     V result = task.call();
                     setSuccessInternal(result);
@@ -130,8 +135,11 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
                     if (!executor().isShutdown()) {
                         long p = periodNanos;
                         if (p > 0) {
+                            // 2.以固定频率执行某个任务
                             deadlineNanos += p;
                         } else {
+                            // 3.每次任务执行完毕之后，间隔多长时间之后再次执行
+                            // 截止时间为当前时间加上间隔时间，-p就表示加上一个正的间隔时间
                             deadlineNanos = nanoTime() - p;
                         }
                         if (!isCancelled()) {

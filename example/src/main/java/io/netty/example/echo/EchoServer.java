@@ -49,15 +49,21 @@ public final class EchoServer {
         }
 
         // Configure the server.
+
+        // 创建两个线程池
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
+            // 添加各种配置
             b.group(bossGroup, workerGroup)
              .channel(NioServerSocketChannel.class)
              .option(ChannelOption.SO_BACKLOG, 100)
-             .handler(new LoggingHandler(LogLevel.INFO))
+             .handler(new LoggingHandler(LogLevel.INFO))// 打印日志
              .childHandler(new ChannelInitializer<SocketChannel>() {
+
+                 // 这里就不太明白，ChannelInitializer 是一个channelHandler，在这个handler里面
+                 // 又 addLast 一些handler??
                  @Override
                  public void initChannel(SocketChannel ch) throws Exception {
                      ChannelPipeline p = ch.pipeline();
@@ -69,6 +75,7 @@ public final class EchoServer {
                  }
              });
 
+            // 开始启动
             // Start the server.
             ChannelFuture f = b.bind(PORT).sync();
 

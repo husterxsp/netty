@@ -240,6 +240,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      * Create a new {@link Channel} and bind it.
      */
     // 端口绑定。用户代码入口
+    // 服务端初始化入口
     public ChannelFuture bind() {
         validate();
         SocketAddress localAddress = this.localAddress;
@@ -284,15 +285,20 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     private ChannelFuture doBind(final SocketAddress localAddress) {
 
         // initAndRegister 初始化并注册
+        // 在绑定端口前，得先创建socket对象，这里就是channel
         final ChannelFuture regFuture = initAndRegister();
+
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
+            // cause() != null 表示I/O操作失败
             return regFuture;
         }
 
+        // 这里的注册是什么意思？注册什么？
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
+            // 继续往下
             doBind0(regFuture, channel, localAddress, promise);
             return promise;
         } else {
@@ -326,6 +332,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             // 新建channel
             // ReflectiveChannelFactory
             channel = channelFactory.newChannel();
+
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -333,10 +340,21 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
                 channel.unsafe().closeForcibly();
             }
             // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
+            // 因为Channel还没有注册，所以得用GlobalEventExecutor？？？
             return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
+        // 这里config().group()返回 bossGroup
+        // 这里也就是说把channel 注册到 bossGroup 的eventLoop上去
+
+        // EventLoopGroup.register()
+        // 这里的register最后会在线程池（EventLoopGroup）里通过轮转算法选取一个EventLoop （next()方法）
+        // 来跟这个channel绑定。
+
+        // 因为
+
         ChannelFuture regFuture = config().group().register(channel);
+
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {
                 channel.close();

@@ -142,6 +142,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     // 初始化服务端channel
+    // 在 initAndRegister 里调用的 init(channel);
     @Override
     void init(Channel channel) throws Exception {
         final Map<ChannelOption<?>, Object> options = options0();
@@ -171,10 +172,14 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
             currentChildAttrs = childAttrs.entrySet().toArray(newAttrArray(childAttrs.size()));
         }
 
+        // 这里是 server channel 的处理，注意和用户代码里的 childHandler 区别开。
+        // 一开始启动的时候，就给channel 的pipeline里添加一个 channelHandler
         p.addLast(new ChannelInitializer<Channel>() {
             @Override
             public void initChannel(Channel ch) throws Exception {
                 final ChannelPipeline pipeline = ch.pipeline();
+
+                // 这里把配置里的 handler 加载进来
                 ChannelHandler handler = config.handler();
                 if (handler != null) {
                     pipeline.addLast(handler);
@@ -185,6 +190,15 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                 // In this case the initChannel(...) method will only be called after this method returns. Because
                 // of this we need to ensure we add our handler in a delayed fashion so all the users handler are
                 // placed in front of the ServerBootstrapAcceptor.
+
+                // 用户代码中的 ServerBootstrap.handler(a) 会把handler a 保存到ServerBootstrap对象，
+                // 然后通过这里的 ServerBootstrapAcceptor 传入调用
+
+                System.out.println("ServerBootstrapAcceptor 调用");
+
+                // ServerBootstrapAcceptor 有什么用？？？
+                // 从名字上就可以看出来，这是一个接入器，专门接受新请求，
+                // 把新的请求扔给某个事件循环器
                 ch.eventLoop().execute(new Runnable() {
                     @Override
                     public void run() {
@@ -192,8 +206,10 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                                 currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
                     }
                 });
+
             }
         });
+        System.out.println(p);
     }
 
     @Override

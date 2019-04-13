@@ -156,6 +156,8 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
                 // 这里 this是服务端channel
                 // ch是客户端channel
                 // NioSocketChannel是封装后的channel
+
+                // 在创建出一条 NioSocketChannel之后，放置在List容器里面之后
                 buf.add(new NioSocketChannel(this, ch));
                 return 1;
             }

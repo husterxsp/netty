@@ -461,13 +461,17 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
         // 注册selector
         @Override
         public final void register(EventLoop eventLoop, final ChannelPromise promise) {
+
+            // 讲道理，这里的promise对象里面已经保存了eventLoop和channel，咋还又要单独传一个eventLoop进来？
             if (eventLoop == null) {
                 throw new NullPointerException("eventLoop");
             }
+
             if (isRegistered()) {
                 promise.setFailure(new IllegalStateException("registered to an event loop already"));
                 return;
             }
+
             if (!isCompatible(eventLoop)) {
                 promise.setFailure(
                         new IllegalStateException("incompatible event loop type: " + eventLoop.getClass().getName()));
@@ -476,18 +480,30 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
             AbstractChannel.this.eventLoop = eventLoop;
 
+            // 这里 inEventLoop 主要判断  eventLoop 对象绑定的thread是否是当前线程
             if (eventLoop.inEventLoop()) {
+
+                // server 一开始 bind 运行到这里的时候，当前线程是主线程，而eventLoop还没绑定线程，是null
+                // 所以不会进到这个分支
 
                 // 实际的注册
                 register0(promise);
             } else {
+
+                // 所以 server 的 bind 操作，进入到了这个分支
+
                 try {
+                    // 也就是说，上面判断操作，主要是为了把 register0(promise); 丢到eventLoop的线程里去做
+                    // 以免阻塞主线程。
+
+                    // 这里excute创建一个runable对象放到eventLoop的执行队列里面
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {
                             register0(promise);
                         }
                     });
+
                 } catch (Throwable t) {
                     logger.warn(
                             "Force-closing a channel whose registration task was not accepted by an event loop: {}",
@@ -508,6 +524,10 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 }
                 boolean firstRegistration = neverRegistered;
                 // 做的第1件事， doRegister
+
+                // 因为 channel -> selector -> eventLoop
+                // 所以这里是 把channel 注册到 selector上?
+
                 doRegister();
                 neverRegistered = false;
                 registered = true;

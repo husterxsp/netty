@@ -289,7 +289,6 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     // 从定时任务队列拉取任务
     // 定时任务队列是优先队列
-    //
     private boolean fetchFromScheduledTaskQueue() {
         long nanoTime = AbstractScheduledEventExecutor.nanoTime();
         Runnable scheduledTask  = pollScheduledTask(nanoTime);
@@ -349,6 +348,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (isShutdown()) {
             reject();
         }
+        // 任务队列插入任务
         return taskQueue.offer(task);
     }
 
@@ -411,7 +411,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * Poll all tasks from the task queue and run them via {@link Runnable#run()} method.  This method stops running
      * the tasks in the task queue and returns if it ran longer than {@code timeoutNanos}.
      */
+    //
+
+
+
     protected boolean runAllTasks(long timeoutNanos) {
+        // 1.从scheduledTaskQueue转移定时任务到taskQueue(mpsc queue)
         fetchFromScheduledTaskQueue();
 
         // 拉取一个任务
@@ -423,9 +428,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             return false;
         }
 
+        // 2.计算本次任务循环的截止时间
         final long deadline = ScheduledFutureTask.nanoTime() + timeoutNanos;
         long runTasks = 0;
         long lastExecutionTime;
+
+        // 3.循环执行任务
         for (;;) {
             safeExecute(task);
 
@@ -433,8 +441,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
             // Check timeout every 64 tasks because nanoTime() is relatively expensive.
             // XXX: Hard-coded value - will make it configurable if it is really a problem.
+
             // nanoTime相对来说也是比较耗时的。
-            //
+            // 每执行64次检查一次时间。
             if ((runTasks & 0x3F) == 0) {
                 lastExecutionTime = ScheduledFutureTask.nanoTime();
                 if (lastExecutionTime >= deadline) {
@@ -449,6 +458,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             }
         }
 
+        // 4.收尾
+        // 执行收尾队列task
         afterRunningAllTasks();
         this.lastExecutionTime = lastExecutionTime;
         return true;
@@ -767,18 +778,28 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             throw new NullPointerException("task");
         }
 
+        // 这里当前还是在主线程的话，就还是false
         boolean inEventLoop = inEventLoop();
+
+        // 一直不太懂这个为什么加 inEventLoop 的判断？
+        // 因为要把所有的任务放在eventLoop里执行，而不是主线程
         if (inEventLoop) {
             addTask(task);
         } else {
-            // false
+            // 一开始 NioEventLoop 还没有绑定线程，NioEventLoop.thread ==null
+            // 所以这里是false
             // 启动线程
+
+            // 这个 startThread 开启的bossWorkGroup的线程，并执行for循环来接收客户端连接
             startThread();
 
+            // 这里第一次运行到这里的时候，task是之前的 register0(promise);
+            // 在主线程里，把这个task 加到nioEventLoop的任务队列里。
             addTask(task);
             if (isShutdown() && removeTask(task)) {
                 reject();
             }
+
         }
 
         if (!addTaskWakesUp && wakesUpForTask(task)) {
@@ -875,13 +896,21 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    //这里会newThread一个线程，并start
     private void doStartThread() {
         assert thread == null;
+
+        // 这里的 Runnable创建新的任务，想相当于创建了一个线程。
+        // 多线程不好跟。。。
         executor.execute(new Runnable() {
             @Override
             public void run() {
                 // 保存当前线程，
-                // 即一个NioeveentLoop和一个线程绑定
+                // 即一个NioEventLoop和一个线程绑定
+
+
+                // 这里 Thread.currentThread() 是刚才newThread创建的。
+                // 然后start之后，就在run方法里面，立即把这个线程赋值给 eventLoop.thread 保存起来
                 thread = Thread.currentThread();
                 if (interrupted) {
                     thread.interrupt();
@@ -890,8 +919,16 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
-                    //
+                    // 这里为什么要用 Class.this?
+                    // 在这个Runable里，this是runable对象，所以通过Class.this调用外部类
+                    // https://stackoverflow.com/questions/5530256/java-class-this
+                    // https://programming.guide/java/class-this.html
                     // nioEventLoop启动
+
+                    // 这里调用 SingleThreadEventExecutor 的run方法
+                    // 因为 SingleThreadEventExecutor 是抽象类
+                    // 实际调用的是 NioEventLoop 的run 方法
+
                     SingleThreadEventExecutor.this.run();
 
                     success = true;

@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
     // 这里其实没必要用两个数组？新版本已经改用一个数组？
+    // https://github.com/netty/netty/issues/6058
 
     private SelectionKey[] keysA;
     private int keysASize;

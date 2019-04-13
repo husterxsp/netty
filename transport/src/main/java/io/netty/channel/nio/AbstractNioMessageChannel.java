@@ -61,7 +61,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
         @Override
         public void read() {
-            // 确保是eventLoop线程？？？和外部线程是什么区别？
+
             assert eventLoop().inEventLoop();
 
             final ChannelConfig config = config();

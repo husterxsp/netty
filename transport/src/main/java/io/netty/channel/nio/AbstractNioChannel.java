@@ -383,12 +383,20 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     @Override
     protected void doRegister() throws Exception {
         boolean selected = false;
+
+        // server eventLoop 启动之后执行的第一个任务
+        // 这里是死循环？如果有异常就返回继续操作？
         for (;;) {
             try {
                 // 调用JDK底层的register 来注册。
                 // 第二个参数0 表示不关心任何事件
                 // 把this传入，这样selector轮询到java channel的读写的时候，可以直接把this拿出来，
                 // this 指服务端的channel
+
+                // 因为 channel -> selector -> eventLoop
+                // 所以这里是 把channel 注册到 selector上?
+
+                // 注意 attachment 的添加，后续select的时候用到。直接拿出来
                 selectionKey = javaChannel().register(eventLoop().selector, 0, this);
                 return;
             } catch (CancelledKeyException e) {

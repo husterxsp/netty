@@ -43,6 +43,15 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
 
     Queue<ScheduledFutureTask<?>> scheduledTaskQueue() {
         if (scheduledTaskQueue == null) {
+            // 这里为什么要使用优先级队列，而不需要考虑多线程的并发？
+            // 对此，netty的处理是，如果是在外部线程调用schedule，netty将添加定时任务的逻辑封装成一个普通的task，
+            // 这个task的任务是添加[添加定时任务]的任务，而不是添加定时任务，其实也就是第二种场景，
+            // 这样，对 PriorityQueue的访问就变成单线程，即只有reactor线程
+            //
+            //作者：简书闪电侠
+            //链接：https://www.jianshu.com/p/58fad8e42379
+            //来源：简书
+            //简书著作权归作者所有，任何形式的转载都请联系作者获得授权并注明出处。
             scheduledTaskQueue = new PriorityQueue<ScheduledFutureTask<?>>();
         }
         return scheduledTaskQueue;
